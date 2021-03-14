@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-// const { response } = require('../app');
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
-// const passwordHash = require('password-hash');
+const passwordHash = require('password-hash');
 
 router.post('/login', (req, res, next) => {
 
@@ -48,6 +47,46 @@ router.post('/login', (req, res, next) => {
     };
     res.status(500).json(errorResponse);
   });
+});
+
+router.post('/signup', (req, res, next) => {
+
+  User.find({email:req.body.email})
+  .exec()
+  .then(result => {
+    if(result.length >=1){
+      return res.status(200).json({
+        message:"user existed"
+      })
+    }
+    else{
+      const user = new User({
+        _id: new mongoose.Types.ObjectId(),
+        fname: req.body.fname,
+        lname: req.body.lname,
+        email: req.body.email,
+        password: passwordHash.generate(req.body.password),
+      });
+    
+      user.save()
+      .then(result => {
+        if(result){
+          let response = {
+            status:"success",
+            message:"user registerd",
+            user: user
+          };
+          res.status(201).json(response);
+        }
+      })
+      .catch(error => {
+        let errorResponse = {
+          error: error
+        };
+        res.status(500).json(errorResponse); 
+      });
+    }
+  })
 });
 
 router.get('/', (req, res, next) => {
@@ -105,46 +144,6 @@ router.get('/user/:userId', (req, res, next) => {
     };
     res.status(500).json(errorResponse);
   });
-});
-
-router.post('/user', (req, res, next) => {
-
-  User.find({email:req.body.email})
-  .exec()
-  .then(result => {
-    if(result.length >=1){
-      return res.status(200).json({
-        message:"user existed"
-      })
-    }
-    else{
-      const user = new User({
-        _id: new mongoose.Types.ObjectId(),
-        fname: req.body.fname,
-        lname: req.body.lname,
-        email: req.body.email,
-        password: req.body.password
-      });
-    
-      user.save()
-      .then(result => {
-        if(result){
-          let response = {
-            status:"success",
-            message:"user registerd",
-            user: user
-          };
-          res.status(201).json(response);
-        }
-      })
-      .catch(error => {
-        let errorResponse = {
-          error: error
-        };
-        res.status(500).json(errorResponse); 
-      });
-    }
-  })
 });
 
 router.put('/edit/:userId', (req, res, next) => {
